@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            product.belongsTo(models.producttype);
+            product.hasMany(models.orderitem);
         }
     }
     product.init(
@@ -27,8 +29,9 @@ module.exports = (sequelize, DataTypes) => {
             kichThuoc: DataTypes.STRING,
             soLuotDanhGia: DataTypes.INTEGER,
             tongDanhGia: DataTypes.FLOAT,
-            loaiSp: DataTypes.STRING,
+            producttypeId: DataTypes.STRING,
             soLuong: DataTypes.INTEGER,
+            trangThai: DataTypes.INTEGER,
         },
         {
             timestamps: false,

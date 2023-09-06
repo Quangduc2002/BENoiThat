@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
             email: DataTypes.STRING,
             phuongThucTT: DataTypes.STRING,
             trangThaiDH: DataTypes.STRING,
+            maKH: DataTypes.INTEGER,
         },
         {
             timestamps: false,
