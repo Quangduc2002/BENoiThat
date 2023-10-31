@@ -27,6 +27,8 @@ module.exports = (sequelize, DataTypes) => {
             namSinh: DataTypes.STRING,
             image: DataTypes.STRING,
             gioiTinh: DataTypes.INTEGER,
+            soDT: DataTypes.STRING,
+            maOTP: DataTypes.STRING,
         },
         {
             timestamps: false,

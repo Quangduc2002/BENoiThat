@@ -145,6 +145,24 @@ class ProductController {
         }
     }
 
+    // [GET] /products/:id/evaluation
+    async evaluation(req, res, next) {
+        try {
+            const save = [];
+            for (let i = 1; i <= 5; i++) {
+                save.push(
+                    await db.rating.findAndCountAll({
+                        where: { productId: req.params.id, numberRating: i },
+                        raw: true,
+                    }),
+                );
+            }
+            res.status(200).json(save);
+        } catch (err) {
+            res.status(500).json(err);
+        }
+    }
+
     // [GET] /products/:id/rating
     async rating(req, res) {
         try {
@@ -188,6 +206,65 @@ class ProductController {
                         }
                     });
             }
+        } catch (err) {
+            res.status(500).json(err);
+        }
+    }
+
+    // [GET] /products/rating
+    async ratingProduct(req, res) {
+        try {
+            const stars = req.body.checkStar;
+            const luotDG = [];
+
+            for (let i = 0; i < stars.length; i++) {
+                const ratings = await db.rating.findOne({
+                    where: { userId: req.body.userId, productId: stars[i].productID },
+                    raw: true,
+                });
+
+                if (ratings) {
+                    await db.rating.update(
+                        { numberRating: stars[i].numberRating },
+                        {
+                            where: { userId: req.body.userId, productId: stars[i].productID },
+                            raw: true,
+                        },
+                    );
+                } else {
+                    await db.rating
+                        .findOne({
+                            order: [['id', 'DESC']],
+                            raw: true,
+                        })
+                        .then(async (latesCourse) => {
+                            // id tự tăng
+                            // req.body.ID = 1;
+                            req.body.ID = latesCourse.ID + 1;
+                            req.body.numberRating = stars[i].numberRating;
+                            req.body.productId = stars[i].productID;
+                            const newRating = await new db.rating(req.body);
+                            const save = await newRating.save();
+                        });
+                }
+
+                luotDG.push(
+                    await db.rating.findAll({
+                        where: { productId: stars[i].productID },
+                        raw: true,
+                    }),
+                );
+            }
+
+            for (let j = 0; j < luotDG.length; j++) {
+                const tongDanhGia = luotDG[j].reduce((acc, item) => item.numberRating + acc, 0) / luotDG[j].length;
+                db.product.update(
+                    { tongDanhGia: tongDanhGia, soLuotDanhGia: luotDG[j].length },
+                    { where: { ID: stars[j].productID }, raw: true },
+                );
+            }
+
+            res.status(200).json('rating success');
         } catch (err) {
             res.status(500).json(err);
         }

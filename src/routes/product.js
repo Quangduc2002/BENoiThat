@@ -18,6 +18,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.get('/:id/evaluation', productController.evaluation);
+router.put('/rating', productController.ratingProduct);
 router.get('/getTrash', productController.getProductTrash);
 router.get('/:id/getRating', productController.getRating);
 router.put('/:id/rating', productController.rating);

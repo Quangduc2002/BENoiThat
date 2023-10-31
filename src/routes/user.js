@@ -18,6 +18,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.post('/updatePass', userController.updatePass);
+router.post('/confirmOTP', userController.confirmOTP);
+router.post('/sendEmail', userController.sendEmail);
+router.post('/findUser', userController.findUser);
 router.put('/:id/changePassword', userController.changePassword);
 router.get('/Staff', userController.getStaff);
 router.get('/Customer', userController.getCustomer);
