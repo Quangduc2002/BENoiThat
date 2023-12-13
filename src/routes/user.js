@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.post('/resetOTP', userController.resetOTP);
 router.post('/updatePass', userController.updatePass);
 router.post('/confirmOTP', userController.confirmOTP);
 router.post('/sendEmail', userController.sendEmail);

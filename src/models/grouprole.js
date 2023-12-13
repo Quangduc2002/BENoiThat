@@ -2,7 +2,7 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class Order extends Model {
+    class GroupRole extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -10,33 +10,24 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            Order.hasMany(models.OrderItem, {
-                foreignKey: 'orderId',
-            });
-            Order.belongsTo(models.User, {
-                foreignKey: 'maKH',
+            GroupRole.hasMany(models.User, {
+                foreignKey: 'roleId',
             });
         }
     }
-    Order.init(
+    GroupRole.init(
         {
             ID: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
             },
-            tenKH: DataTypes.STRING,
-            diaChi: DataTypes.STRING,
-            soDT: DataTypes.STRING,
-            email: DataTypes.STRING,
-            phuongThucTT: DataTypes.STRING,
-            trangThaiDH: DataTypes.STRING,
-            maKH: DataTypes.INTEGER,
+            name: DataTypes.STRING,
         },
         {
-            timestamps: true,
+            timestamps: false,
             sequelize,
-            modelName: 'Order',
+            modelName: 'GroupRole',
         },
     );
-    return Order;
+    return GroupRole;
 };

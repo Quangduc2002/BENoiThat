@@ -4,7 +4,7 @@ class orderItemController {
     //[GET] /orderItem
     async getOrderItem(req, res, next) {
         try {
-            const save = await db.orderitem.findAll();
+            const save = await db.OrderItem.findAll();
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);
@@ -14,7 +14,7 @@ class orderItemController {
     // /:id/orderItem
     async getOrderDetailItem(req, res, next) {
         try {
-            const save = await db.orderitem.findAll({ where: { orderID: req.params.id } });
+            const save = await db.OrderItem.findAll({ where: { orderID: req.params.id } });
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);
@@ -24,7 +24,7 @@ class orderItemController {
     // /:id/orderFinish
     async getOrderFinish(req, res, next) {
         try {
-            const save = await db.orderitem.findAll({ where: { orderID: req.params.id } });
+            const save = await db.OrderItem.findAll({ where: { orderID: req.params.id } });
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);

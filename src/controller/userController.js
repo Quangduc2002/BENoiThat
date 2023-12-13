@@ -2,13 +2,14 @@ const db = require('../models/index');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const salt = bcrypt.genSaltSync(10);
+const sequelize = require('sequelize');
 
 class UserController {
     // findUser
     async findUser(req, res, next) {
         try {
             let userData = {};
-            const user = await db.user.findOne({ where: { email: req.body.email } });
+            const user = await db.User.findOne({ where: { email: req.body.email } });
             let getUser = {
                 id: user.ID,
                 email: user.email,
@@ -29,7 +30,7 @@ class UserController {
     // /user
     async getAllUser(req, res, next) {
         try {
-            let getUser = await db.user.findAll();
+            let getUser = await db.User.findAll();
             res.status(200).json(getUser);
         } catch (error) {
             console.log(error);
@@ -39,7 +40,16 @@ class UserController {
     // [GET] user/Customer
     async getCustomer(req, res) {
         try {
-            const save = await db.user.findAll({ where: { roleId: 1 } });
+            const save = await db.User.findAll({
+                where: { roleId: 1 },
+                include: [
+                    {
+                        model: db.Order,
+                    },
+                ],
+                nest: true,
+            });
+
             res.status(200).json(save);
         } catch (error) {
             console.log(error);
@@ -49,7 +59,7 @@ class UserController {
     // [GET] user/staff
     async getStaff(req, res) {
         try {
-            const save = await db.user.findAll({ where: { roleId: 2 } });
+            const save = await db.User.findAll({ where: { roleId: 2 } });
             res.status(200).json(save);
         } catch (error) {
             console.log(error);
@@ -59,7 +69,7 @@ class UserController {
     // [GET] user/:id
     async getUser(req, res) {
         try {
-            const User = await db.user.findOne({
+            const User = await db.User.findOne({
                 where: { ID: req.params.id },
             });
 
@@ -73,7 +83,7 @@ class UserController {
     async editUser(req, res) {
         try {
             req.body.image = req.file ? req.file.filename : req.body.image;
-            await db.user.update(req.body, { where: { ID: req.params.id }, raw: true });
+            await db.User.update(req.body, { where: { ID: req.params.id }, raw: true });
             res.status(200).json('edit success');
         } catch (err) {
             res.status(500).json(err);
@@ -83,12 +93,12 @@ class UserController {
     // [PUT] /user/changePassword
     async changePassword(req, res) {
         try {
-            const findUser = await db.user.findOne({ where: { ID: req.params.id }, raw: true });
+            const findUser = await db.User.findOne({ where: { ID: req.params.id }, raw: true });
             const checkPassword = bcrypt.compareSync(req.body.currentPass, findUser.password);
 
             if (findUser && checkPassword) {
                 var hashChangePassword = bcrypt.hashSync(req.body.password, salt);
-                await db.user.update(
+                await db.User.update(
                     { password: hashChangePassword },
                     {
                         where: { ID: req.params.id },
@@ -110,7 +120,7 @@ class UserController {
             //check email
             let chekUserEmail = async (userEmail) => {
                 try {
-                    let user = await db.user.findOne({
+                    let user = await db.User.findOne({
                         where: { email: userEmail },
                     });
                     if (user) {
@@ -127,21 +137,19 @@ class UserController {
             var hashPasswordRigister = bcrypt.hashSync(req.body.password, salt);
 
             if (!isEmailExist) {
-                await db.user
-                    .findOne({
-                        order: [['id', 'DESC']],
-                        raw: true,
-                    })
-                    .then((latesCourse) => {
-                        // id tự tăng
-                        req.body.ID = latesCourse.ID + 1;
-                        req.body.password = hashPasswordRigister;
-                        const newUser = new db.user(req.body);
-                        newUser
-                            .save()
-                            .then(() => res.status(200).json('register success'))
-                            .catch(() => res.status(500).json());
-                    });
+                await db.User.findOne({
+                    order: [['id', 'DESC']],
+                    raw: true,
+                }).then((latesCourse) => {
+                    // id tự tăng
+                    req.body.ID = latesCourse.ID + 1;
+                    req.body.password = hashPasswordRigister;
+                    const newUser = new db.User(req.body);
+                    newUser
+                        .save()
+                        .then(() => res.status(200).json('register success'))
+                        .catch(() => res.status(500).json());
+                });
             } else {
                 res.status(500).json({ errCode: 1, message: 'Email đã tồn tại !' });
             }
@@ -153,7 +161,7 @@ class UserController {
     // [DELETE] user/:id/Customer
     async DelCustomer(req, res) {
         try {
-            await db.user.destroy({
+            await db.User.destroy({
                 where: { ID: req.params.id },
             });
             await db.order.destroy({
@@ -194,7 +202,7 @@ class UserController {
                     let isExist = await chekUserEmail(Email);
 
                     if (isExist) {
-                        let user = await db.user.findOne({
+                        let user = await db.User.findOne({
                             where: { email: Email },
                             raw: true,
                         });
@@ -221,13 +229,19 @@ class UserController {
                                 });
                             } else {
                                 userData.errCode = 3;
-                                userData.errMessage = 'Wrong password';
-                                return res.status(500).json();
+                                userData.errMessage = 'Tài khoản hoặc mật khẩu không chính xác';
+                                return res.status(500).json({
+                                    errCode: userData.errCode,
+                                    message: userData.errMessage,
+                                });
                             }
                         } else {
                             userData.errCode = 2;
-                            userData.errMessage = `User's not found`;
-                            return res.status(500).json();
+                            userData.errMessage = `Tài khoản hoặc mật khẩu không chính xác`;
+                            return res.status(500).json({
+                                errCode: userData.errCode,
+                                message: userData.errMessage,
+                            });
                         }
                     } else {
                         userData.errCode = 1;
@@ -243,7 +257,7 @@ class UserController {
         //check email
         let chekUserEmail = async (userEmail) => {
             try {
-                let user = await db.user.findOne({
+                let user = await db.User.findOne({
                     where: { email: userEmail },
                 });
 
@@ -278,7 +292,7 @@ class UserController {
                 });
             } else if (req.body.password && req.body.password.length >= 6) {
                 var hashPasswordRigister = bcrypt.hashSync(req.body.password, salt);
-                await db.user.update(
+                await db.User.update(
                     { password: hashPasswordRigister },
                     {
                         where: { ID: req.body.user.id },
@@ -298,11 +312,18 @@ class UserController {
     // /confirmOTP
     async confirmOTP(req, res) {
         try {
-            const user = await db.user.findOne({
+            const user = await db.User.findOne({
                 where: { ID: req.body.user.id },
             });
 
             if (user && user.maOTP === req.body.OTP) {
+                await db.User.update(
+                    { maOTP: '' },
+                    {
+                        where: { ID: req.body.user.id },
+                        raw: true,
+                    },
+                );
                 res.status(200).json('Success');
             } else {
                 return res.status(500).json({
@@ -310,6 +331,21 @@ class UserController {
                     message: 'Mã OTP không chính xác  !',
                 });
             }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    // /resetOTP
+    async resetOTP(req, res) {
+        try {
+            await db.User.update(
+                { maOTP: '' },
+                {
+                    where: { ID: req.body.user.id },
+                    raw: true,
+                },
+            );
         } catch (error) {
             console.log(error);
         }
@@ -360,8 +396,8 @@ class UserController {
             });
         }
 
-        if (res.statusCode === 200 && res.statusCode) {
-            await db.user.update(
+        if (res.statusCode && res.statusCode === 200) {
+            await db.User.update(
                 { maOTP: maOTP },
                 {
                     where: { ID: req.body.user.id },

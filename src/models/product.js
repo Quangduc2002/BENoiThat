@@ -2,7 +2,7 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class product extends Model {
+    class Product extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -10,18 +10,31 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            product.belongsTo(models.producttype);
-            product.hasMany(models.orderitem);
+            Product.belongsTo(models.ProductType, {
+                foreignKey: 'producttypeId',
+            });
+            Product.belongsTo(models.Meterial, {
+                foreignKey: 'chatLieu',
+            });
+            Product.hasOne(models.ImportReceiptDetail, {
+                foreignKey: 'productId',
+            });
+            Product.hasMany(models.OrderItem, {
+                foreignKey: 'productId',
+            });
+            Product.hasMany(models.Rating, {
+                foreignKey: 'productId',
+            });
         }
     }
-    product.init(
+    Product.init(
         {
             ID: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
             },
             tenSp: DataTypes.STRING,
-            chatLieu: DataTypes.STRING,
+            chatLieu: DataTypes.INTEGER,
             giaNhap: DataTypes.STRING,
             giaBan: DataTypes.STRING,
             giamGia: DataTypes.STRING,
@@ -29,15 +42,15 @@ module.exports = (sequelize, DataTypes) => {
             kichThuoc: DataTypes.STRING,
             soLuotDanhGia: DataTypes.INTEGER,
             tongDanhGia: DataTypes.FLOAT,
-            producttypeId: DataTypes.STRING,
+            producttypeId: DataTypes.INTEGER,
             soLuong: DataTypes.INTEGER,
             trangThai: DataTypes.INTEGER,
         },
         {
             timestamps: false,
             sequelize,
-            modelName: 'product',
+            modelName: 'Product',
         },
     );
-    return product;
+    return Product;
 };
