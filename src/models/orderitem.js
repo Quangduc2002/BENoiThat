@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             kichThuoc: DataTypes.STRING,
         },
         {
-            timestamps: false,
+            timestamps: true,
             sequelize,
             modelName: 'OrderItem',
         },

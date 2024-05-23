@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
             comment: DataTypes.STRING,
         },
         {
-            timestamps: false,
+            timestamps: true,
             sequelize,
             modelName: 'Rating',
         },

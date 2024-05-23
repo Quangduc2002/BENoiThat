@@ -1,8 +1,10 @@
-const db = require('../models/index');
+require('dotenv').config();
 const bcrypt = require('bcrypt');
+const db = require('../models/index');
 const nodemailer = require('nodemailer');
 const salt = bcrypt.genSaltSync(10);
 const sequelize = require('sequelize');
+const { createJWT } = require('../middleware/JWTAction');
 
 class UserController {
     // findUser
@@ -40,17 +42,31 @@ class UserController {
     // [GET] user/Customer
     async getCustomer(req, res) {
         try {
-            const save = await db.User.findAll({
+            const totalAmounts = await db.User.findAll({
                 where: { roleId: 1 },
+                attributes: [
+                    'ID',
+                    'email',
+                    'name',
+                    [db.sequelize.fn('SUM', db.sequelize.col('Orders.OrderItems.donGia')), 'totalPrice'],
+                ],
                 include: [
                     {
                         model: db.Order,
+                        where: { trangThaiDH: 1 },
+                        include: [
+                            {
+                                model: db.OrderItem,
+                                attributes: [],
+                            },
+                        ],
+                        attributes: [],
                     },
                 ],
-                nest: true,
+                group: ['ID', 'email', 'name'],
             });
 
-            res.status(200).json(save);
+            res.status(200).json(totalAmounts);
         } catch (error) {
             console.log(error);
         }
@@ -184,7 +200,7 @@ class UserController {
     }
 
     // [POST] user/login
-    async handleLogin(req, res) {
+    async handleLogin(req, res, next) {
         let email = req.body.email;
         let password = req.body.password;
 
@@ -222,10 +238,27 @@ class UserController {
                                 userData.errCode = 0;
                                 userData.errMessage = 'OK';
                                 userData.user = getUser;
+
+                                // JWT token
+                                let roles = await db.GroupRole.findOne({
+                                    where: { id: user.roleId },
+                                    include: [{ model: db.Role }],
+                                });
+
+                                let payload = {
+                                    email: user.email,
+                                    roles,
+                                    getUser,
+                                };
+
+                                let token = createJWT(payload);
+                                // set cookie
+                                res.cookie('jwt', token, { httpOnly: true, maxAge: 60 * 60 * 1000 });
                                 return res.status(200).json({
                                     errCode: userData.errCode,
                                     message: userData.errMessage,
                                     user: userData.user ? userData.user : {},
+                                    DT: { access_token: token, roles, getUser },
                                 });
                             } else {
                                 userData.errCode = 3;
@@ -407,6 +440,90 @@ class UserController {
         }
 
         res.status(200).json(' success');
+    }
+
+    // [POST] addUsers
+    async addUsers(req, res, next) {
+        const userAlls = await db.User.findAll({
+            attributes: ['email'],
+            raw: true,
+        });
+
+        const convertToNewData = await Promise.all(
+            req.body.listUsers.map(async (user) => {
+                const hashedPassword = bcrypt.hashSync(user.password, salt);
+                return {
+                    email: user.email,
+                    password: hashedPassword,
+                    name: user.surName + ' ' + user.name,
+                    roleId: user.groupRole,
+                    ngaySinh: user.ngaySinh,
+                    thangSinh: user.thangSinh,
+                    namSinh: user.namSinh,
+                    gioiTinh: user.sex,
+                    image: user.image,
+                };
+            }),
+        );
+
+        const checkEmail = convertToNewData.filter(({ email: email1 }) =>
+            userAlls.some(({ email: email2 }) => email1 === email2),
+        );
+
+        if (checkEmail.length === 0) {
+            await db.User.bulkCreate(convertToNewData);
+            res.status(200).json({ errCode: 0, message: 'Thêm người dùng thành công' });
+        } else {
+            res.status(500).json({ errCode: 1, message: `${checkEmail[0].email} email đã tồn tại !` });
+        }
+    }
+
+    //[GET] /account
+    async getAccount(req, res, next) {
+        return res.status(200).json({
+            errCode: 0,
+            DT: { access_token: req.token, roles: req.userData.roles, getUser: req.userData.getUser },
+        });
+    }
+
+    async handleLogout(req, res) {
+        try {
+            res.clearCookie('jwt');
+            return res.status(200).json({
+                EM: 'clear cookie done',
+                EC: 0,
+                DT: '',
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async statisticCustomers(req, res, next) {
+        try {
+            const totalAmounts = await db.User.findAll({
+                where: { roleId: 1 },
+                attributes: [
+                    'ID',
+                    'email',
+                    'name',
+                    [
+                        db.Sequelize.literal(
+                            '(SELECT SUM(`OrderItem`.`donGia`) FROM `Order` INNER JOIN `OrderItem` ON `Order`.`ID` = `OrderItem`.`OrderID` WHERE `Order`.`maKH` = `User`.`ID` AND `Order`.`trangThaiDH` = 1 )',
+                        ),
+                        'totalPrice',
+                    ],
+                ],
+                group: ['ID', 'email', 'name'],
+                order: [[db.Sequelize.literal('totalPrice'), 'DESC']],
+
+                limit: req.body.statisticCustomer === '2 khách hàng có tiền hàng lớn nhất' ? 2 : null,
+            });
+
+            res.status(200).json(totalAmounts);
+        } catch (error) {
+            console.log(error);
+        }
     }
 }
 

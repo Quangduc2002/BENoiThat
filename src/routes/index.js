@@ -3,6 +3,7 @@ const producttypesRouter = require('./productType');
 const usersRouter = require('./user');
 const ordersRouter = require('./order');
 const orderItemRouter = require('./orderitem');
+const { checkUserJWT, checkUserPermission } = require('../middleware/JWTAction');
 
 function route(app) {
     app.use('/orderItem', orderItemRouter);

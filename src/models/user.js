@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
             maOTP: DataTypes.STRING,
         },
         {
-            timestamps: false,
+            timestamps: true,
             sequelize,
             modelName: 'User',
         },

@@ -64,7 +64,17 @@ class OrderController {
     // /bill
     async getBill(req, res, next) {
         try {
-            const order = await db.Order.findAll({ where: { trangThaiDH: 1 } });
+            const order = await db.OrderItem.sum('soLuong', {
+                include: [
+                    {
+                        model: db.Order,
+                        where: { trangThaiDH: 1 },
+                        attributes: ['trangThaiDH'],
+                    },
+                ],
+                raw: true,
+                nest: true,
+            });
             res.status(200).json(order);
         } catch (err) {
             res.status(500).json(err);
@@ -208,6 +218,10 @@ class OrderController {
         } catch (error) {
             console.log(error);
         }
+    }
+
+    async payMent(req, res) {
+        res.status(200).json(process.env.CLIENT_ID);
     }
 
     // /order/Email

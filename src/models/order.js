@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
             phuongThucTT: DataTypes.STRING,
             trangThaiDH: DataTypes.STRING,
             maKH: DataTypes.INTEGER,
+            isPay: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
         },
         {
             timestamps: true,

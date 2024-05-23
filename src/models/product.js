@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
             trangThai: DataTypes.INTEGER,
         },
         {
-            timestamps: false,
+            timestamps: true,
             sequelize,
             modelName: 'Product',
         },

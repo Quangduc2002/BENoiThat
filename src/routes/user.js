@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controller/userController');
+const { checkUserJWT, checkUserPermission } = require('../middleware/JWTAction');
 
 // add image
 const multer = require('multer');
@@ -18,6 +19,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.all('*', checkUserJWT);
+router.post('/statistic', userController.statisticCustomers);
+router.get('/logout', userController.handleLogout);
+router.get('/account', userController.getAccount);
+router.post('/addUsers', userController.addUsers);
 router.post('/resetOTP', userController.resetOTP);
 router.post('/updatePass', userController.updatePass);
 router.post('/confirmOTP', userController.confirmOTP);
