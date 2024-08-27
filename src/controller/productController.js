@@ -4,23 +4,20 @@ class ProductController {
     // /products/
     async getProduct(req, res, next) {
         try {
+            const { tenSp } = req.query;
+
+            let whereProduct = { trangThai: 1 };
+
+            if (tenSp) {
+                whereProduct.tenSp = { [db.Sequelize.Op.like]: `%${tenSp}%` };
+            }
             let getProduct = await db.Product.findAll({
-                where: { trangThai: 1 },
+                where: whereProduct,
                 include: [{ model: db.Meterial }, { model: db.ProductType }],
                 raw: true,
                 nest: true,
             });
             res.status(200).json(getProduct);
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-    // /meterial
-    async getMeterial(req, res, next) {
-        try {
-            let getMeterial = await db.Meterial.findAll();
-            res.status(200).json(getMeterial);
         } catch (error) {
             console.log(error);
         }
@@ -50,18 +47,8 @@ class ProductController {
             }).then((latesCourse) => {
                 // id tự tăng
                 req.body.ID = latesCourse.ID + 1;
-                req.body.image = req.file ? req.file.filename : '';
                 const newProduct = new db.Product(req.body);
                 newProduct.save();
-
-                // const importReceipt = new db.ImportReceipt(req.body).save().then((receipt) => {
-                //     db.ImportReceiptDetail.create({
-                //         receiptId: receipt.ID,
-                //         productId: newProduct.ID,
-                //         soLuong: req.body.soLuong,
-                //         giaNhap: req.body.giaNhap,
-                //     });
-                // });
 
                 res.status(200).json(newProduct);
             });
@@ -267,12 +254,13 @@ class ProductController {
     // [put] /products/rating
     async ratingProduct(req, res) {
         try {
+            console.log(req.body);
             const stars = req.body.checkStar;
             const luotDG = [];
 
             for (let i = 0; i < stars.length; i++) {
                 const ratings = await db.Rating.findOne({
-                    where: { userId: req.body.userId, productId: stars[i].productID },
+                    where: { userId: req.body.userId, productId: stars[i].productID, orderId: stars[i].orderID },
                     raw: true,
                 });
 
@@ -280,7 +268,11 @@ class ProductController {
                     await db.Rating.update(
                         { numberRating: stars[i].numberRating },
                         {
-                            where: { userId: req.body.userId, productId: stars[i].productID },
+                            where: {
+                                userId: req.body.userId,
+                                productId: stars[i].productID,
+                                orderId: stars[i].orderID,
+                            },
                             raw: true,
                         },
                     );
@@ -295,6 +287,7 @@ class ProductController {
                         req.body.numberRating = stars[i].numberRating;
                         req.body.productId = stars[i].productID;
                         req.body.comment = stars[i].comment;
+                        req.body.orderId = stars[i].orderID;
                         const newRating = await new db.Rating(req.body);
                         const save = await newRating.save();
                     });
@@ -325,10 +318,35 @@ class ProductController {
     // [post] /products/statistic
     async statistic(req, res, next) {
         try {
-            const startMonth = (req.body.precious - 1) * 3 + 1;
-            const endMonth = req.body.precious * 3;
+            const { year, month, precious, methodStatistic } = req.body;
+
+            const startMonth = (precious - 1) * 3 + 1;
+            const endMonth = precious * 3;
+
+            let whereCondition;
+
+            if (methodStatistic === 'Sản phẩm đã bán trong tháng') {
+                whereCondition = db.Sequelize.and(
+                    db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%Y') = ${year}`),
+                    db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%m') = ${month}`),
+                );
+                // };
+            } else if (methodStatistic === 'Sản phẩm đã bán theo quý') {
+                whereCondition = {
+                    [db.Sequelize.Op.and]: [
+                        db.sequelize.literal(
+                            `DATE_FORMAT(OrderItem.createdAt, '%Y-%m-%d') BETWEEN '${year}-${startMonth
+                                .toString()
+                                .padStart(2, '0')}-1}' AND '${year}-${endMonth.toString().padStart(2, '0')}-31}'`,
+                        ),
+                        db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%Y') = ${year}`),
+                    ],
+                };
+            }
+
             const monthlyStatistics = await db.OrderItem.findAll({
                 include: [
+                    { model: db.Product, attributes: ['image'] },
                     {
                         model: db.Order,
                         where: { trangThaiDH: 1 },
@@ -336,41 +354,23 @@ class ProductController {
                     },
                 ],
                 attributes: [
-                    // [db.sequelize.fn('DATE_FORMAT', db.sequelize.col('OrderItem.createdAt'), '%Y'), 'year'],
                     'productID',
                     'tenSp',
                     'image',
                     'kichThuoc',
                     'donGia',
-                    [db.sequelize.fn('SUM', db.sequelize.col('soLuong')), 'totalQuantity'],
+                    [db.sequelize.fn('SUM', db.sequelize.col('OrderItem.soLuong')), 'totalQuantity'],
                 ],
                 group: ['productID', 'tenSp', 'image', 'kichThuoc', 'donGia'],
-                where:
-                    req.body.methodStatistic === 'Sản phẩm đã bán trong tháng'
-                        ? db.Sequelize.and(
-                              db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%Y') = ${req.body.year}`),
-                              db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%m') = ${req.body.month}`),
-                          )
-                        : req.body.methodStatistic === 'Sản phẩm đã bán theo quý'
-                        ? {
-                              [db.Sequelize.Op.and]: [
-                                  db.sequelize.literal(
-                                      `DATE_FORMAT(OrderItem.createdAt, '%Y-%m-%d') BETWEEN '${
-                                          req.body.year
-                                      }-${startMonth.toString().padStart(2, '0')}-1}' AND '${req.body.year}-${endMonth
-                                          .toString()
-                                          .padStart(2, '0')}-31}'`,
-                                  ),
-                                  db.sequelize.literal(`DATE_FORMAT(OrderItem.createdAt, '%Y') = ${req.body.year}`),
-                              ],
-                          }
-                        : '',
+                where: whereCondition,
                 raw: true,
                 nest: true,
             });
+
             res.status(200).json(monthlyStatistics);
         } catch (error) {
-            res.status(500).json(error);
+            console.error(error);
+            res.status(500).json({ error: 'An error occurred while fetching statistics' });
         }
     }
 
@@ -411,7 +411,7 @@ class ProductController {
                 nest: true,
             });
 
-            // // Merge kết quả thống kê với mảng các tháng trong năm
+            // Merge kết quả thống kê với mảng các tháng trong năm
             const resultMonthsInYear = monthsInYear.map((month) => {
                 const matchingResult = monthlyRevenue.find((result) => result.month === month);
                 return matchingResult ? matchingResult : { month, total: 0 };

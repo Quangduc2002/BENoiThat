@@ -54,7 +54,9 @@ class OrderController {
     //[GET] /listOrder
     async getListOrder(req, res, next) {
         try {
-            const save = await db.Order.findAll();
+            const save = await db.Order.findAll({
+                order: [['createdAt', 'DESC']],
+            });
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);
@@ -83,16 +85,6 @@ class OrderController {
 
     // /income
     async getIncome(req, res, next) {
-        // try {
-        //     const order = await db.Order.findAll({ where: { trangThaiDH: 1 }, raw: true });
-        //     let orderItem = [];
-        //     for (let i = 0; i < order.length; i++) {
-        //         orderItem.push(await db.OrderItem.findAll({ where: { maSp: order[i].ID }, raw: true }));
-        //     }
-        //     res.status(200).json(orderItem);
-        // } catch (err) {
-        //     res.status(500).json(err);
-        // }
         try {
             const order = await db.Order.findAll({
                 where: { trangThaiDH: 1 },
@@ -134,16 +126,6 @@ class OrderController {
     // /:user/waitConfirm
     async waitConfirm(req, res, next) {
         try {
-            // const order = await db.Order.findAll({
-            //     where: { maKH: req.params.user },
-            //     // truy vấn đến bảng orderitem
-            //     include: { model: db.OrderItem },
-            //     raw: true,
-            //     // nhóm thành 1 Obj
-            //     nest: true,
-            // });
-            // res.status(200).json(order);
-
             const order = await db.Order.findAll({ where: { maKH: req.params.user, trangThaiDH: 0 }, raw: true });
             let orderItem = [];
             for (let i = 0; i < order.length; i++) {

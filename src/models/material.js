@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
             tenChatLieu: DataTypes.STRING,
         },
         {
-            timestamps: false,
+            timestamps: true,
             sequelize,
             modelName: 'Meterial',
         },

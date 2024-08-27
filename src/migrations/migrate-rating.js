@@ -25,6 +25,9 @@ module.exports = {
             numberRating: {
                 type: Sequelize.INTEGER,
             },
+            orderId: {
+                type: Sequelize.INTEGER,
+            },
             comment: {
                 type: Sequelize.STRING,
             },

@@ -1,4 +1,5 @@
 'use strict';
+const { TRUE } = require('node-sass');
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
@@ -38,6 +39,10 @@ module.exports = (sequelize, DataTypes) => {
             gioiTinh: DataTypes.INTEGER,
             soDT: DataTypes.STRING,
             maOTP: DataTypes.STRING,
+            status: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: true,
+            },
         },
         {
             timestamps: true,

@@ -4,17 +4,24 @@ class orderItemController {
     //[GET] /orderItem
     async getOrderItem(req, res, next) {
         try {
-            const save = await db.OrderItem.findAll();
+            const save = await db.OrderItem.findAll({
+                include: { model: db.Product },
+            });
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);
         }
     }
 
-    // /:id/orderItem
+    // /:id
     async getOrderDetailItem(req, res, next) {
         try {
-            const save = await db.OrderItem.findAll({ where: { orderID: req.params.id } });
+            const save = await db.OrderItem.findAll({
+                where: { orderID: req.params.id },
+                include: [{ model: db.Product }, { model: db.Order }],
+                raw: true,
+                nest: true,
+            });
             res.status(200).json(save);
         } catch (err) {
             res.status(500).json(err);

@@ -12,14 +12,14 @@ class UserController {
         try {
             let userData = {};
             const user = await db.User.findOne({ where: { email: req.body.email } });
-            let getUser = {
-                id: user.ID,
-                email: user.email,
-                name: user.name,
-                soDT: user.soDT,
-                image: user.image,
-            };
             if (user) {
+                let getUser = {
+                    id: user.ID,
+                    email: user.email,
+                    name: user.name,
+                    soDT: user.soDT,
+                    image: user.image,
+                };
                 userData.user = getUser;
                 res.status(200).json({ user: userData.user ? userData.user : {} });
             } else {
@@ -98,11 +98,10 @@ class UserController {
     // [PUT] /user/:id/edit
     async editUser(req, res) {
         try {
-            req.body.image = req.file ? req.file.filename : req.body.image;
-            await db.User.update(req.body, { where: { ID: req.params.id }, raw: true });
+            await db.User.update(req.body.data, { where: { ID: req.params.id }, raw: true });
             res.status(200).json('edit success');
         } catch (err) {
-            res.status(500).json(err);
+            console.log(err);
         }
     }
 
@@ -110,10 +109,10 @@ class UserController {
     async changePassword(req, res) {
         try {
             const findUser = await db.User.findOne({ where: { ID: req.params.id }, raw: true });
-            const checkPassword = bcrypt.compareSync(req.body.currentPass, findUser.password);
+            const checkPassword = bcrypt.compareSync(req.body.data.currentPass, findUser.password);
 
             if (findUser && checkPassword) {
-                var hashChangePassword = bcrypt.hashSync(req.body.password, salt);
+                var hashChangePassword = bcrypt.hashSync(req.body.data.password, salt);
                 await db.User.update(
                     { password: hashChangePassword },
                     {
@@ -149,8 +148,8 @@ class UserController {
                 }
             };
 
-            let isEmailExist = await chekUserEmail(req.body.email);
-            var hashPasswordRigister = bcrypt.hashSync(req.body.password, salt);
+            let isEmailExist = await chekUserEmail(req.body.data.email);
+            var hashPasswordRigister = bcrypt.hashSync(req.body.data.password, salt);
 
             if (!isEmailExist) {
                 await db.User.findOne({
@@ -159,8 +158,8 @@ class UserController {
                 }).then((latesCourse) => {
                     // id tự tăng
                     req.body.ID = latesCourse.ID + 1;
-                    req.body.password = hashPasswordRigister;
-                    const newUser = new db.User(req.body);
+                    req.body.data.password = hashPasswordRigister;
+                    const newUser = new db.User(req.body.data);
                     newUser
                         .save()
                         .then(() => res.status(200).json('register success'))
@@ -183,17 +182,32 @@ class UserController {
             await db.order.destroy({
                 where: { maKH: req.params.id },
             });
-
             const Order = await db.order.findOne({
                 where: { maKH: req.params.id },
                 raw: true,
             });
-
             await db.orderitem.destroy({
                 where: { orderID: Order.ID },
             });
 
-            res.status(200).json('delete success');
+            res.status(200).json(deleteCustomer);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async statusClient(req, res) {
+        try {
+            await db.User.update(
+                { status: req.body.status },
+                {
+                    where: { ID: req.params.id },
+                },
+            );
+            res.status(200).json({
+                errCode: 0,
+                message: req.body.status === 1 ? 'Mở tài khoản thành công' : 'Khóa tài khoản thành công',
+            });
         } catch (error) {
             console.log(error);
         }
@@ -219,9 +233,10 @@ class UserController {
 
                     if (isExist) {
                         let user = await db.User.findOne({
-                            where: { email: Email },
+                            where: { email: Email, status: 1 },
                             raw: true,
                         });
+
                         // check user có tồn tại hay không
                         if (user) {
                             let getUser = {
@@ -270,7 +285,7 @@ class UserController {
                             }
                         } else {
                             userData.errCode = 2;
-                            userData.errMessage = `Tài khoản hoặc mật khẩu không chính xác`;
+                            userData.errMessage = `Tài khoản của bạn đã bị khóa`;
                             return res.status(500).json({
                                 errCode: userData.errCode,
                                 message: userData.errMessage,
@@ -507,6 +522,7 @@ class UserController {
                     'ID',
                     'email',
                     'name',
+                    'status',
                     [
                         db.Sequelize.literal(
                             '(SELECT SUM(`OrderItem`.`donGia`) FROM `Order` INNER JOIN `OrderItem` ON `Order`.`ID` = `OrderItem`.`OrderID` WHERE `Order`.`maKH` = `User`.`ID` AND `Order`.`trangThaiDH` = 1 )',
