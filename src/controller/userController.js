@@ -98,8 +98,30 @@ class UserController {
     // [PUT] /user/:id/edit
     async editUser(req, res) {
         try {
-            await db.User.update(req.body.data, { where: { ID: req.params.id }, raw: true });
-            res.status(200).json('edit success');
+            const updatedUsers = await db.User.update(req.body.data, { where: { ID: req.params.id } });
+            let getUser = {
+                id: req.params.id,
+                email: req.body.data.email,
+                name: req.body.data.name,
+                roleId: req.userData.roles.ID,
+                image: req.body.data.image,
+                ngaySinh: req.body.data.ngaySinh,
+                namSinh: req.body.data.namSinh,
+                thangSinh: req.body.data.thangSinh,
+                gioiTinh: req.body.data.gioiTinh,
+            };
+
+            let payload = {
+                email: req.body.data.email,
+                roles: req.userData.roles,
+                getUser,
+            };
+
+            let token = createJWT(payload);
+            res.cookie('jwt', token, { httpOnly: true, maxAge: 60 * 60 * 1000 });
+            return res.status(200).json({
+                DT: { access_token: token, roles: req.userData.roles, getUser },
+            });
         } catch (err) {
             console.log(err);
         }
@@ -245,6 +267,10 @@ class UserController {
                                 name: user.name,
                                 roleId: user.roleId,
                                 image: user.image,
+                                ngaySinh: user.ngaySinh,
+                                namSinh: user.namSinh,
+                                thangSinh: user.thangSinh,
+                                gioiTinh: user.gioiTinh,
                             };
 
                             // check hasdPassword in database

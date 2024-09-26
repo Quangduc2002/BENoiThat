@@ -103,8 +103,12 @@ class OrderController {
     // /:user/getOrder
     async getOrder(req, res, next) {
         try {
-            const order = await db.Order.findAll({ where: { maKH: req.params.user }, raw: true });
             let orderItem = [];
+            const order = await db.Order.findAll({
+                where: { maKH: req.params.user },
+                order: [['createdAt', 'DESC']],
+                raw: true,
+            });
             for (let i = 0; i < order.length; i++) {
                 orderItem.push(
                     await db.OrderItem.findAll({
