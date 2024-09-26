@@ -46,6 +46,9 @@ module.exports = {
             maOTP: {
                 type: Sequelize.STRING,
             },
+            status: {
+                type: Sequelize.BOOLEAN,
+            },
             createdAt: {
                 allowNull: true,
                 type: Sequelize.DATE,

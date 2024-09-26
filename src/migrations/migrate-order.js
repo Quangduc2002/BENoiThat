@@ -33,6 +33,9 @@ module.exports = {
                     key: 'ID',
                 },
             },
+            isPay: {
+                type: Sequelize.BOOLEAN,
+            },
             createdAt: {
                 allowNull: true,
                 type: Sequelize.DATE,

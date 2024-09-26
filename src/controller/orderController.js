@@ -18,6 +18,7 @@ class OrderController {
                     raw: true,
                 }).then((latesCourse) => {
                     req.body.ID = latesCourse.ID + 1;
+                    // req.body.ID = 1;
                     const order = new db.Order(req.body);
                     order.save();
                     for (let item = 0; item < req.body.Product.length; item++) {
