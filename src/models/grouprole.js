@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
             },
             name: DataTypes.STRING,
+            role: DataTypes.STRING,
         },
         {
             timestamps: false,

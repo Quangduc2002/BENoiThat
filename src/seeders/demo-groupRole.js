@@ -19,16 +19,18 @@ module.exports = {
             [
                 {
                     name: 'Khách hàng',
+                    name: 'USER',
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 },
                 {
-                    name: 'Nhân viên',
-                    createdAt: new Date(),
+                    name: 'Ban Quản lý',
+                    name: 'MANAGEMENT_BOARD',
                     updatedAt: new Date(),
                 },
                 {
                     name: 'Quản trị viên',
+                    name: 'ADMIN',
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 },

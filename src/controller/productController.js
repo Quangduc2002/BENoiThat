@@ -115,6 +115,7 @@ class ProductController {
     // [PUT] /products/trash
     async trash(req, res) {
         const selectedCheckboxes = req.body.isChecked;
+
         if (req.body.action === 'delete') {
             await db.Product.destroy({
                 where: { ID: selectedCheckboxes },
